@@ -67,3 +67,15 @@ export async function createComment(commentData) {
 
   return response.json();
 }
+export async function createBench(formData) {
+  const response = await fetch(`${API1_URL}/benches`, {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to create bench");
+  }
+
+  return response.json();
+}

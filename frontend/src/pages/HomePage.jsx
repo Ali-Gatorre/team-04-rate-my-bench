@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { fetchBenches, voteBench } from "../services/api";
 import BenchCard from "../components/BenchCard";
 
@@ -49,7 +50,12 @@ export default function HomePage() {
 
   return (
     <div>
-      <h2>RateMyBench Feed</h2>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <h2>RateMyBench Feed</h2>
+        <Link to="/add-bench">
+          <button>Create Post</button>
+        </Link>
+      </div>
 
       <form onSubmit={handleSearchSubmit} style={{ marginBottom: "20px" }}>
         <input

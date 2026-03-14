@@ -133,7 +133,7 @@ export default function BenchDetailPage() {
     bench && bench.image_path ? `http://localhost:5001${bench.image_path}` : null;
 
   return (
-    <div>
+    <div style={{ maxWidth: "900px", margin: "0 auto", padding: "20px" }}>
       {loadingBench && <p>Loading bench...</p>}
 
       {!loadingBench && bench && (
@@ -141,17 +141,32 @@ export default function BenchDetailPage() {
           <h2>{bench.title}</h2>
 
           {imageUrl && (
-            <img
-              src={imageUrl}
-              alt={bench.title}
+            <div
               style={{
                 width: "100%",
-                maxHeight: "400px",
-                objectFit: "cover",
-                borderRadius: "8px",
-                marginBottom: "12px",
+                maxWidth: "900px",
+                margin: "0 auto 20px auto",
+                backgroundColor: "#111",
+                border: "1px solid #333",
+                borderRadius: "12px",
+                padding: "12px",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
               }}
-            />
+            >
+              <img
+                src={imageUrl}
+                alt={bench.title}
+                style={{
+                  width: "100%",
+                  maxHeight: "500px",
+                  objectFit: "contain",
+                  borderRadius: "8px",
+                  display: "block",
+                }}
+              />
+            </div>
           )}
 
           <p>{bench.caption}</p>
