@@ -21,10 +21,11 @@ export default function BenchCard({ bench, onVote }) {
           alt={bench.title}
           style={{
             width: "100%",
-            maxHeight: "320px",
-            objectFit: "cover",
+            maxHeight: "420px",
+            objectFit: "contain",
             borderRadius: "8px",
             marginBottom: "12px",
+            backgroundColor: "#111",
           }}
         />
       )}
@@ -45,8 +46,13 @@ export default function BenchCard({ bench, onVote }) {
       </p>
 
       <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
-        <button onClick={() => onVote(bench.id, 1)}>Upvote</button>
-        <button onClick={() => onVote(bench.id, -1)}>Downvote</button>
+        {onVote && (
+          <>
+            <button onClick={() => onVote(bench.id, 1)}>Upvote</button>
+            <button onClick={() => onVote(bench.id, -1)}>Downvote</button>
+          </>
+        )}
+
         <Link to={`/bench/${bench.id}`}>
           <button>Open Post</button>
         </Link>
