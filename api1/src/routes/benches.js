@@ -5,7 +5,7 @@ const upload = require("../middleware/upload");
 
 router.get("/", async (req, res) => {
   try {
-    const { search, sort } = req.query;
+    const { search, sort, author } = req.query;
 
     let query = `
       SELECT
@@ -25,16 +25,29 @@ router.get("/", async (req, res) => {
       LEFT JOIN bench_votes v ON b.id = v.bench_id
     `;
 
+    const conditions = [];
     const values = [];
 
     if (search) {
-      query += `
-        WHERE
-          LOWER(b.title) LIKE LOWER($1)
-          OR LOWER(b.caption) LIKE LOWER($1)
-          OR LOWER(COALESCE(b.location_name, '')) LIKE LOWER($1)
-      `;
       values.push(`%${search}%`);
+      const index = values.length;
+      conditions.push(`
+        (
+          LOWER(b.title) LIKE LOWER($${index})
+          OR LOWER(b.caption) LIKE LOWER($${index})
+          OR LOWER(COALESCE(b.location_name, '')) LIKE LOWER($${index})
+        )
+      `);
+    }
+
+    if (author) {
+      values.push(author);
+      const index = values.length;
+      conditions.push(`b.author_name = $${index}`);
+    }
+
+    if (conditions.length > 0) {
+      query += ` WHERE ` + conditions.join(" AND ");
     }
 
     query += ` GROUP BY b.id `;
@@ -52,6 +65,7 @@ router.get("/", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch benches" });
   }
 });
+
 
 router.get("/:id", async (req, res) => {
   try {

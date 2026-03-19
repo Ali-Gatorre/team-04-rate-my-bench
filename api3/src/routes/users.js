@@ -32,16 +32,10 @@ router.get("/:id", async (req, res) => {
       [userId]
     );
 
-    const postsResult = await pool.query(
-      `SELECT COUNT(*)::int AS posts_count FROM benches WHERE author_name = $1`,
-      [userResult.rows[0].username]
-    );
-
     res.json({
       ...userResult.rows[0],
       followers_count: followersResult.rows[0].followers_count,
       following_count: followingResult.rows[0].following_count,
-      posts_count: postsResult.rows[0].posts_count,
     });
   } catch (error) {
     console.error("Get user profile error:", error);
