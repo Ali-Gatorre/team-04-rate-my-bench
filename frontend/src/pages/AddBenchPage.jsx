@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { createBench } from "../services/api";
+import { createBench, fetchCurrentUser } from "../services/api";
 
 export default function AddBenchPage() {
   const navigate = useNavigate();
@@ -10,13 +10,26 @@ export default function AddBenchPage() {
   const [locationName, setLocationName] = useState("");
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
-  const [authorName, setAuthorName] = useState("");
   const [imageFile, setImageFile] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
 
   const [dragActive, setDragActive] = useState(false);
   const [previewUrl, setPreviewUrl] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    async function loadUser() {
+      try {
+        const user = await fetchCurrentUser();
+        setCurrentUser(user);
+      } catch {
+        setCurrentUser(null);
+      }
+    }
+
+    loadUser();
+  }, []);
 
   function handleFile(file) {
     if (!file) return;
@@ -51,8 +64,13 @@ export default function AddBenchPage() {
     event.preventDefault();
     setError("");
 
-    if (!title.trim() || !caption.trim() || !authorName.trim()) {
-      setError("Title, caption and author name are required.");
+    if (!currentUser) {
+      setError("You must be logged in to create a post.");
+      return;
+    }
+
+    if (!title.trim() || !caption.trim()) {
+      setError("Title and caption are required.");
       return;
     }
 
@@ -65,14 +83,13 @@ export default function AddBenchPage() {
       formData.append("location_name", locationName);
       formData.append("latitude", latitude);
       formData.append("longitude", longitude);
-      formData.append("author_name", authorName);
+      formData.append("author_name", currentUser.username);
 
       if (imageFile) {
         formData.append("image", imageFile);
       }
 
       const newBench = await createBench(formData);
-
       navigate(`/bench/${newBench.id}`);
     } catch (err) {
       setError("Unable to create bench.");
@@ -84,6 +101,12 @@ export default function AddBenchPage() {
   return (
     <div>
       <h2>Create a New Bench Post</h2>
+
+      {currentUser && (
+        <p style={{ marginBottom: "12px" }}>
+          Posting as <strong>@{currentUser.username}</strong>
+        </p>
+      )}
 
       {error && <p>{error}</p>}
 
@@ -133,16 +156,6 @@ export default function AddBenchPage() {
             placeholder="Longitude"
             value={longitude}
             onChange={(e) => setLongitude(e.target.value)}
-            style={{ width: "100%" }}
-          />
-        </div>
-
-        <div style={{ marginBottom: "12px" }}>
-          <input
-            type="text"
-            placeholder="Author name"
-            value={authorName}
-            onChange={(e) => setAuthorName(e.target.value)}
             style={{ width: "100%" }}
           />
         </div>

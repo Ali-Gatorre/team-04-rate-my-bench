@@ -5,6 +5,46 @@ const uploadAvatar = require("../middleware/uploadAvatar");
 
 const router = express.Router();
 
+router.get("/by-username/:username", async (req, res) => {
+  try {
+    const { username } = req.params;
+
+    const userResult = await pool.query(
+      `
+      SELECT id, username, first_name, last_name, bio, profile_image_path, created_at
+      FROM users
+      WHERE username = $1
+      `,
+      [username]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const user = userResult.rows[0];
+
+    const followersResult = await pool.query(
+      `SELECT COUNT(*)::int AS followers_count FROM follows WHERE following_id = $1`,
+      [user.id]
+    );
+
+    const followingResult = await pool.query(
+      `SELECT COUNT(*)::int AS following_count FROM follows WHERE follower_id = $1`,
+      [user.id]
+    );
+
+    res.json({
+      ...user,
+      followers_count: followersResult.rows[0].followers_count,
+      following_count: followingResult.rows[0].following_count,
+    });
+  } catch (error) {
+    console.error("Get user by username error:", error);
+    res.status(500).json({ error: "Failed to fetch user by username" });
+  }
+});
+
 router.get("/:id", async (req, res) => {
   try {
     const userId = Number(req.params.id);
@@ -43,6 +83,27 @@ router.get("/:id", async (req, res) => {
   }
 });
 
+router.get("/:id/follow-status", authMiddleware, async (req, res) => {
+  try {
+    const followerId = req.user.id;
+    const followingId = Number(req.params.id);
+
+    const result = await pool.query(
+      `
+      SELECT id
+      FROM follows
+      WHERE follower_id = $1 AND following_id = $2
+      `,
+      [followerId, followingId]
+    );
+
+    res.json({ is_following: result.rows.length > 0 });
+  } catch (error) {
+    console.error("Get follow status error:", error);
+    res.status(500).json({ error: "Failed to fetch follow status" });
+  }
+});
+
 router.patch("/me", authMiddleware, async (req, res) => {
   try {
     const { first_name, last_name, bio } = req.body;
@@ -67,30 +128,35 @@ router.patch("/me", authMiddleware, async (req, res) => {
   }
 });
 
-router.post("/me/avatar", authMiddleware, uploadAvatar.single("avatar"), async (req, res) => {
-  try {
-    const imagePath = req.file ? `/uploads/avatars/${req.file.filename}` : null;
+router.post(
+  "/me/avatar",
+  authMiddleware,
+  uploadAvatar.single("avatar"),
+  async (req, res) => {
+    try {
+      const imagePath = req.file ? `/uploads/avatars/${req.file.filename}` : null;
 
-    if (!imagePath) {
-      return res.status(400).json({ error: "Avatar file is required" });
+      if (!imagePath) {
+        return res.status(400).json({ error: "Avatar file is required" });
+      }
+
+      const result = await pool.query(
+        `
+        UPDATE users
+        SET profile_image_path = $1
+        WHERE id = $2
+        RETURNING id, username, first_name, last_name, email, bio, profile_image_path, created_at
+        `,
+        [imagePath, req.user.id]
+      );
+
+      res.json(result.rows[0]);
+    } catch (error) {
+      console.error("Upload avatar error:", error);
+      res.status(500).json({ error: "Failed to upload avatar" });
     }
-
-    const result = await pool.query(
-      `
-      UPDATE users
-      SET profile_image_path = $1
-      WHERE id = $2
-      RETURNING id, username, first_name, last_name, email, bio, profile_image_path, created_at
-      `,
-      [imagePath, req.user.id]
-    );
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error("Upload avatar error:", error);
-    res.status(500).json({ error: "Failed to upload avatar" });
   }
-});
+);
 
 router.post("/:id/follow", authMiddleware, async (req, res) => {
   try {
@@ -189,29 +255,33 @@ router.get("/me/notifications", authMiddleware, async (req, res) => {
   }
 });
 
-router.patch("/me/notifications/:notificationId/read", authMiddleware, async (req, res) => {
-  try {
-    const notificationId = Number(req.params.notificationId);
+router.patch(
+  "/me/notifications/:notificationId/read",
+  authMiddleware,
+  async (req, res) => {
+    try {
+      const notificationId = Number(req.params.notificationId);
 
-    const result = await pool.query(
-      `
-      UPDATE notifications
-      SET is_read = TRUE
-      WHERE id = $1 AND user_id = $2
-      RETURNING *
-      `,
-      [notificationId, req.user.id]
-    );
+      const result = await pool.query(
+        `
+        UPDATE notifications
+        SET is_read = TRUE
+        WHERE id = $1 AND user_id = $2
+        RETURNING *
+        `,
+        [notificationId, req.user.id]
+      );
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Notification not found" });
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: "Notification not found" });
+      }
+
+      res.json(result.rows[0]);
+    } catch (error) {
+      console.error("Read notification error:", error);
+      res.status(500).json({ error: "Failed to update notification" });
     }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error("Read notification error:", error);
-    res.status(500).json({ error: "Failed to update notification" });
   }
-});
+);
 
 module.exports = router;

@@ -4,6 +4,7 @@ const path = require("path");
 
 const authRouter = require("./routes/auth");
 const usersRouter = require("./routes/users");
+const messagesRouter = require("./routes/messages");
 
 const app = express();
 const PORT = process.env.API3_PORT || 5003;
@@ -18,6 +19,7 @@ app.get("/", (req, res) => {
 
 app.use("/auth", authRouter);
 app.use("/users", usersRouter);
+app.use("/messages", messagesRouter);
 
 app.listen(PORT, () => {
   console.log(`API 3 running on http://localhost:${PORT}`);

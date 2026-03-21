@@ -5,6 +5,7 @@ import {
   fetchCommentsByBenchId,
   createComment,
   voteBench,
+  fetchCurrentUser,
 } from "../services/api";
 
 export default function BenchDetailPage() {
@@ -12,6 +13,7 @@ export default function BenchDetailPage() {
 
   const [bench, setBench] = useState(null);
   const [comments, setComments] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
   const [loadingBench, setLoadingBench] = useState(true);
   const [loadingComments, setLoadingComments] = useState(true);
   const [error, setError] = useState("");
@@ -28,7 +30,19 @@ export default function BenchDetailPage() {
   useEffect(() => {
     loadBench();
     loadComments();
+    loadCurrentUser();
   }, [id]);
+
+  async function loadCurrentUser() {
+    try {
+      const user = await fetchCurrentUser();
+      setCurrentUser(user);
+      setAuthorName(user.username);
+      setReplyAuthorName(user.username);
+    } catch {
+      setCurrentUser(null);
+    }
+  }
 
   async function loadBench() {
     try {
@@ -64,10 +78,16 @@ export default function BenchDetailPage() {
 
   async function handleVote(voteType) {
     try {
+      if (!currentUser) {
+        setError("You must be logged in to vote.");
+        return;
+      }
+
       await voteBench(id, {
-        author_name: "Ali",
+        author_name: currentUser.username,
         vote_type: voteType,
       });
+
       loadBench();
     } catch (err) {
       setError("Unable to vote");
@@ -77,7 +97,7 @@ export default function BenchDetailPage() {
   async function handleSubmit(event) {
     event.preventDefault();
 
-    if (!authorName.trim() || !content.trim()) {
+    if (!currentUser || !content.trim()) {
       return;
     }
 
@@ -86,12 +106,11 @@ export default function BenchDetailPage() {
 
       await createComment({
         bench_id: Number(id),
-        author_name: authorName,
+        author_name: currentUser.username,
         content: content,
         parent_comment_id: null,
       });
 
-      setAuthorName("");
       setContent("");
       loadComments();
     } catch (err) {
@@ -104,7 +123,7 @@ export default function BenchDetailPage() {
   async function handleReplySubmit(event, parentCommentId) {
     event.preventDefault();
 
-    if (!replyAuthorName.trim() || !replyContent.trim()) {
+    if (!currentUser || !replyContent.trim()) {
       return;
     }
 
@@ -113,12 +132,11 @@ export default function BenchDetailPage() {
 
       await createComment({
         bench_id: Number(id),
-        author_name: replyAuthorName,
+        author_name: currentUser.username,
         content: replyContent,
         parent_comment_id: parentCommentId,
       });
 
-      setReplyAuthorName("");
       setReplyContent("");
       setReplyingTo(null);
       loadComments();
@@ -223,15 +241,6 @@ export default function BenchDetailPage() {
                   style={{ marginTop: "10px" }}
                 >
                   <div>
-                    <input
-                      type="text"
-                      placeholder="Your name"
-                      value={replyAuthorName}
-                      onChange={(e) => setReplyAuthorName(e.target.value)}
-                    />
-                  </div>
-
-                  <div>
                     <textarea
                       placeholder="Write your reply"
                       value={replyContent}
@@ -247,7 +256,6 @@ export default function BenchDetailPage() {
                     type="button"
                     onClick={() => {
                       setReplyingTo(null);
-                      setReplyAuthorName("");
                       setReplyContent("");
                     }}
                     style={{ marginLeft: "10px" }}
@@ -263,28 +271,29 @@ export default function BenchDetailPage() {
 
       <h3>Add a Comment</h3>
 
-      <form onSubmit={handleSubmit}>
-        <div>
-          <input
-            type="text"
-            placeholder="Your name"
-            value={authorName}
-            onChange={(e) => setAuthorName(e.target.value)}
-          />
-        </div>
+      {!currentUser && <p>You must be logged in to comment.</p>}
 
-        <div>
-          <textarea
-            placeholder="Write your comment"
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-          />
-        </div>
+      {currentUser && (
+        <form onSubmit={handleSubmit}>
+          <div>
+            <p style={{ marginBottom: "8px" }}>
+              Commenting as <strong>@{currentUser.username}</strong>
+            </p>
+          </div>
 
-        <button type="submit" disabled={submitting}>
-          {submitting ? "Posting..." : "Post Comment"}
-        </button>
-      </form>
+          <div>
+            <textarea
+              placeholder="Write your comment"
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+            />
+          </div>
+
+          <button type="submit" disabled={submitting}>
+            {submitting ? "Posting..." : "Post Comment"}
+          </button>
+        </form>
+      )}
     </div>
   );
 }

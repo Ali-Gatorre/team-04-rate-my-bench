@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { fetchBenches, voteBench } from "../services/api";
+import { fetchBenches, voteBench, fetchCurrentUser } from "../services/api";
 import BenchCard from "../components/BenchCard";
 
 export default function HomePage() {
   const [benches, setBenches] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
@@ -12,7 +13,17 @@ export default function HomePage() {
 
   useEffect(() => {
     loadBenches();
+    loadCurrentUser();
   }, [sort]);
+
+  async function loadCurrentUser() {
+    try {
+      const user = await fetchCurrentUser();
+      setCurrentUser(user);
+    } catch {
+      setCurrentUser(null);
+    }
+  }
 
   async function loadBenches(currentSearch = search, currentSort = sort) {
     try {
@@ -37,8 +48,13 @@ export default function HomePage() {
 
   async function handleVote(benchId, voteType) {
     try {
+      if (!currentUser) {
+        setError("You must be logged in to vote.");
+        return;
+      }
+
       await voteBench(benchId, {
-        author_name: "Ali",
+        author_name: currentUser.username,
         vote_type: voteType,
       });
 
@@ -81,9 +97,7 @@ export default function HomePage() {
       {loading && <p>Loading benches...</p>}
       {error && <p>{error}</p>}
 
-      {!loading && !error && benches.length === 0 && (
-        <p>No benches found.</p>
-      )}
+      {!loading && !error && benches.length === 0 && <p>No benches found.</p>}
 
       {!loading && !error && benches.length > 0 && (
         <div>

@@ -2,32 +2,45 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import {
   fetchUserProfile,
+  fetchUserByUsername,
   fetchBenchesByAuthor,
   fetchCurrentUser,
   uploadAvatar,
+  fetchFollowStatus,
+  followUser,
+  unfollowUser,
 } from "../services/api";
 import BenchCard from "../components/BenchCard";
 
 export default function ProfilePage() {
-  const { id } = useParams();
+  const { id, username } = useParams();
 
   const [profile, setProfile] = useState(null);
   const [posts, setPosts] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
+  const [isFollowing, setIsFollowing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
 
   useEffect(() => {
     loadProfilePage();
-  }, [id]);
+  }, [id, username]);
 
   async function loadProfilePage() {
     try {
       setLoading(true);
       setError("");
 
-      const profileData = await fetchUserProfile(id);
+      let profileData;
+
+      if (username) {
+        profileData = await fetchUserByUsername(username);
+      } else {
+        profileData = await fetchUserProfile(id);
+      }
+
       setProfile(profileData);
 
       const userPosts = await fetchBenchesByAuthor(profileData.username);
@@ -36,8 +49,16 @@ export default function ProfilePage() {
       try {
         const me = await fetchCurrentUser();
         setCurrentUser(me);
+
+        if (me.id !== profileData.id) {
+          const followStatus = await fetchFollowStatus(profileData.id);
+          setIsFollowing(followStatus.is_following);
+        } else {
+          setIsFollowing(false);
+        }
       } catch {
         setCurrentUser(null);
+        setIsFollowing(false);
       }
     } catch (err) {
       setError("Unable to load profile");
@@ -52,7 +73,6 @@ export default function ProfilePage() {
 
     try {
       setUploading(true);
-
       const formData = new FormData();
       formData.append("avatar", file);
 
@@ -62,6 +82,26 @@ export default function ProfilePage() {
       setError("Unable to upload avatar");
     } finally {
       setUploading(false);
+    }
+  }
+
+  async function handleFollowToggle() {
+    if (!profile) return;
+
+    try {
+      setFollowLoading(true);
+
+      if (isFollowing) {
+        await unfollowUser(profile.id);
+      } else {
+        await followUser(profile.id);
+      }
+
+      await loadProfilePage();
+    } catch (err) {
+      setError("Unable to update follow status");
+    } finally {
+      setFollowLoading(false);
     }
   }
 
@@ -81,7 +121,8 @@ export default function ProfilePage() {
     ? `http://localhost:5003${profile.profile_image_path}`
     : null;
 
-  const isOwnProfile = currentUser && Number(currentUser.id) === Number(profile.id);
+  const isOwnProfile =
+    currentUser && Number(currentUser.id) === Number(profile.id);
 
   return (
     <div style={{ maxWidth: "900px", margin: "0 auto", padding: "20px" }}>
@@ -132,6 +173,22 @@ export default function ProfilePage() {
               <span><strong>{profile.following_count}</strong> following</span>
               <span><strong>{posts.length}</strong> posts</span>
             </div>
+
+            {!isOwnProfile && currentUser && (
+              <div style={{ marginTop: "14px", display: "flex", gap: "10px" }}>
+                <button onClick={handleFollowToggle} disabled={followLoading}>
+                  {followLoading
+                    ? "Loading..."
+                    : isFollowing
+                    ? "Unfollow"
+                    : "Follow"}
+                </button>
+
+                <a href={`/messages/${profile.id}`}>
+                  <button type="button">Message</button>
+                </a>
+              </div>
+            )}
           </div>
         </div>
 
@@ -154,11 +211,7 @@ export default function ProfilePage() {
         {posts.length > 0 && (
           <div>
             {posts.map((bench) => (
-              <BenchCard
-                key={bench.id}
-                bench={bench}
-                onVote={() => {}}
-              />
+              <BenchCard key={bench.id} bench={bench} />
             ))}
           </div>
         )}

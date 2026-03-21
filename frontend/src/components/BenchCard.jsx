@@ -38,7 +38,10 @@ export default function BenchCard({ bench, onVote }) {
       </p>
 
       <p>
-        <strong>Author:</strong> {bench.author_name}
+        <strong>Author:</strong>{" "}
+        <Link to={`/profile/username/${encodeURIComponent(bench.author_name)}`}>
+          @{bench.author_name}
+        </Link>
       </p>
 
       <p>

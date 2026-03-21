@@ -1,6 +1,7 @@
 const API1_URL = import.meta.env.VITE_API1_URL || "http://localhost:5001";
 const API2_URL = import.meta.env.VITE_API2_URL || "http://localhost:5002";
 const API3_URL = import.meta.env.VITE_API3_URL || "http://localhost:5003";
+const API4_URL = import.meta.env.VITE_API4_URL || "http://localhost:5004";
 
 export function getAuthToken() {
   return localStorage.getItem("token");
@@ -181,6 +182,156 @@ export async function uploadAvatar(formData) {
 
   if (!response.ok) {
     throw new Error(data.error || "Failed to upload avatar");
+  }
+
+  return data;
+}
+
+export async function fetchUserByUsername(username) {
+  const response = await fetch(`${API3_URL}/users/by-username/${encodeURIComponent(username)}`);
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.error || "Failed to fetch user by username");
+  }
+
+  return data;
+}
+
+export async function fetchFollowStatus(userId) {
+  const token = getAuthToken();
+
+  const response = await fetch(`${API3_URL}/users/${userId}/follow-status`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.error || "Failed to fetch follow status");
+  }
+
+  return data;
+}
+
+export async function followUser(userId) {
+  const token = getAuthToken();
+
+  const response = await fetch(`${API3_URL}/users/${userId}/follow`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.error || "Failed to follow user");
+  }
+
+  return data;
+}
+
+export async function unfollowUser(userId) {
+  const token = getAuthToken();
+
+  const response = await fetch(`${API3_URL}/users/${userId}/follow`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.error || "Failed to unfollow user");
+  }
+
+  return data;
+}
+
+export async function markNotificationAsRead(notificationId) {
+  const token = getAuthToken();
+
+  const response = await fetch(
+    `${API3_URL}/users/me/notifications/${notificationId}/read`,
+    {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.error || "Failed to mark notification as read");
+  }
+
+  return data;
+}
+
+
+export async function fetchConversations() {
+  const token = getAuthToken();
+
+  const response = await fetch(`${API4_URL}/messages/conversations`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.error || "Failed to fetch conversations");
+  }
+
+  return data;
+}
+
+export async function fetchMessages(userId) {
+  const token = getAuthToken();
+
+  const response = await fetch(`${API4_URL}/messages/${userId}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.error || "Failed to fetch messages");
+  }
+
+  return data;
+}
+
+export async function sendMessage(userId, receiverUsername, content) {
+  const token = getAuthToken();
+
+  const response = await fetch(`${API4_URL}/messages/${userId}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      receiver_username: receiverUsername,
+      content,
+    }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.error || "Failed to send message");
   }
 
   return data;

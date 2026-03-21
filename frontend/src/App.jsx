@@ -7,6 +7,8 @@ import RegisterPage from "./pages/RegisterPage";
 import LoginPage from "./pages/LoginPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import ProfilePage from "./pages/ProfilePage";
+import MessagesPage from "./pages/MessagesPage";
+import ConversationPage from "./pages/ConversationPage";
 import Navbar from "./components/Navbar";
 import {
   fetchCurrentUser,
@@ -68,6 +70,10 @@ function App() {
           element={<NotificationsPage notifications={notifications} />}
         />
         <Route path="/profile/:id" element={<ProfilePage />} />
+	<Route path="/profile/username/:username"
+	element={<ProfilePage />} />
+        <Route path="/messages" element={<MessagesPage />} />
+        <Route path="/messages/:userId" element={<ConversationPage />} />
       </Routes>
     </BrowserRouter>
   );
