@@ -21,6 +21,6 @@ app.use("/auth", authRouter);
 app.use("/users", usersRouter);
 app.use("/messages", messagesRouter);
 
-app.listen(PORT,"0.0.0.0" ,() => {
-  console.log(`API 3 running on http://0.0.0.0:${PORT}`);
+app.listen(PORT, () => {
+  console.log(`API 3 running on http://localhost:${PORT}`);
 });
