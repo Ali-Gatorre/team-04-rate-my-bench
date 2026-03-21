@@ -1,0 +1,11 @@
+CREATE TABLE IF NOT EXISTS messages (
+  id SERIAL PRIMARY KEY,
+  sender_id INTEGER NOT NULL,
+  sender_username VARCHAR(100) NOT NULL,
+  receiver_id INTEGER NOT NULL,
+  receiver_username VARCHAR(100) NOT NULL,
+  content TEXT NOT NULL,
+  is_read BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
