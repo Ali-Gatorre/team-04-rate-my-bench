@@ -141,4 +141,51 @@ router.post("/", upload.single("image"), async (req, res) => {
   }
 });
 
+router.delete("/:id", async (req, res) => {
+  try {
+    const benchId = Number(req.params.id);
+    const { author_name } = req.body;
+
+    if (!author_name) {
+      return res.status(400).json({
+        error: "author_name is required",
+      });
+    }
+
+    const benchResult = await pool.query(
+      `
+      SELECT *
+      FROM benches
+      WHERE id = $1
+      `,
+      [benchId]
+    );
+
+    if (benchResult.rows.length === 0) {
+      return res.status(404).json({ error: "Bench not found" });
+    }
+
+    const bench = benchResult.rows[0];
+
+    if (bench.author_name !== author_name) {
+      return res.status(403).json({
+        error: "You can only delete your own posts",
+      });
+    }
+
+    await pool.query(
+      `
+      DELETE FROM benches
+      WHERE id = $1
+      `,
+      [benchId]
+    );
+
+    res.json({ message: "Bench deleted successfully" });
+  } catch (error) {
+    console.error("Delete bench error:", error);
+    res.status(500).json({ error: "Failed to delete bench" });
+  }
+});
+
 module.exports = router;

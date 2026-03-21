@@ -9,6 +9,7 @@ import {
   fetchFollowStatus,
   followUser,
   unfollowUser,
+  deleteBench,
 } from "../services/api";
 import BenchCard from "../components/BenchCard";
 
@@ -102,6 +103,20 @@ export default function ProfilePage() {
       setError("Unable to update follow status");
     } finally {
       setFollowLoading(false);
+    }
+  }
+
+  async function handleDeletePost(benchId) {
+    if (!currentUser) return;
+
+    const confirmed = window.confirm("Are you sure you want to delete this post?");
+    if (!confirmed) return;
+
+    try {
+      await deleteBench(benchId, currentUser.username);
+      await loadProfilePage();
+    } catch (err) {
+      setError("Unable to delete post");
     }
   }
 
@@ -211,7 +226,27 @@ export default function ProfilePage() {
         {posts.length > 0 && (
           <div>
             {posts.map((bench) => (
-              <BenchCard key={bench.id} bench={bench} />
+              <div key={bench.id} style={{ marginBottom: "20px" }}>
+                <BenchCard bench={bench} />
+
+                {isOwnProfile && (
+                  <div style={{ marginTop: "8px" }}>
+                    <button
+                      onClick={() => handleDeletePost(bench.id)}
+                      style={{
+                        backgroundColor: "#8b1e1e",
+                        color: "white",
+                        border: "none",
+                        padding: "8px 12px",
+                        borderRadius: "8px",
+                        cursor: "pointer",
+                      }}
+                    >
+                      Delete Post
+                    </button>
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         )}

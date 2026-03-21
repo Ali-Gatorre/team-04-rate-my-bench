@@ -126,6 +126,26 @@ export async function createBench(formData) {
   return response.json();
 }
 
+export async function deleteBench(benchId, authorName) {
+  const response = await fetch(`${API1_URL}/benches/${benchId}`, {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      author_name: authorName,
+    }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.error || "Failed to delete bench");
+  }
+
+  return data;
+}
+
 export async function fetchCommentsByBenchId(benchId) {
   const response = await fetch(`${API2_URL}/comments?bench_id=${benchId}`);
   if (!response.ok) throw new Error("Failed to fetch comments");
